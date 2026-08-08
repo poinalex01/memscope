@@ -34,4 +34,9 @@ namespace memscope
         return result;
     }
 
+    HANDLE OpenProcessByPid(DWORD pid)
+    {
+        return OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE, pid);
+    }
+
 }
