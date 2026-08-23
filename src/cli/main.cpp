@@ -1,5 +1,6 @@
 #include "process_finder.h"
 #include "anticheat_guard.h"
+#include "memory_scanner.h"
 
 #include <iostream>
 #include <windows.h>
@@ -33,6 +34,10 @@ int main()
     }
 
     std::wcout << L"Process handle opened successfully." << std::endl;
+
+    auto regions = memscope::GetReadableWritableRegions(processHandle);
+
+    std::wcout << L"Found " << regions.size() << L" readable/writable regions." << std::endl;
 
     CloseHandle(processHandle);
 
