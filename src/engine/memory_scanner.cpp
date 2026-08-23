@@ -68,4 +68,29 @@ namespace memscope
         return matches;
     }
 
+    std::vector<uintptr_t> RescanAddresses(HANDLE processHandle, const std::vector<uintptr_t> &previousMatches, int32_t targetValue)
+    {
+        std::vector<uintptr_t> stillMatching;
+
+        for (const auto &address : previousMatches)
+        {
+            int32_t currentValue = 0;
+            SIZE_T bytesRead = 0;
+
+            bool success = ReadProcessMemory(
+                processHandle,
+                reinterpret_cast<LPCVOID>(address),
+                &currentValue,
+                sizeof(int32_t),
+                &bytesRead);
+
+            if (success && bytesRead == sizeof(int32_t) && currentValue == targetValue)
+            {
+                stillMatching.push_back(address);
+            }
+        }
+
+        return stillMatching;
+    }
+
 }
