@@ -14,5 +14,6 @@ namespace memscope
     };
 
     std::vector<MemoryRegion> GetReadableWritableRegions(HANDLE processHandle);
+    std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle, const MemoryRegion &region, int32_t targetValue);
 
 }

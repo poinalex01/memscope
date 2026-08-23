@@ -30,4 +30,42 @@ namespace memscope
         return regions;
     }
 
+    std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle, const MemoryRegion &region, int32_t targetValue)
+    {
+        std::vector<uintptr_t> matches;
+
+        if (region.size < sizeof(int32_t))
+        {
+            return matches;
+        }
+
+        std::vector<uint8_t> buffer(region.size);
+        SIZE_T bytesRead = 0;
+
+        bool success = ReadProcessMemory(
+            processHandle,
+            reinterpret_cast<LPCVOID>(region.baseAddress),
+            buffer.data(),
+            region.size,
+            &bytesRead);
+
+        if (!success)
+        {
+            return matches;
+        }
+
+        for (size_t offset = 0; offset + sizeof(int32_t) <= bytesRead; offset += sizeof(int32_t))
+        {
+            int32_t value;
+            std::memcpy(&value, buffer.data() + offset, sizeof(int32_t));
+
+            if (value == targetValue)
+            {
+                matches.push_back(region.baseAddress + offset);
+            }
+        }
+
+        return matches;
+    }
+
 }
