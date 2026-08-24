@@ -107,4 +107,26 @@ namespace memscope
         return success && bytesWritten == sizeof(int32_t);
     }
 
+    void FreezeWorker::Start(HANDLE processHandle, uintptr_t address, int32_t value)
+    {
+        running = true;
+
+        workerThread = std::thread([this, processHandle, address, value]()
+                                   {
+        while (running) {
+            WriteValueToAddress(processHandle, address, value);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        } });
+    }
+
+    void FreezeWorker::Stop()
+    {
+        running = false;
+
+        if (workerThread.joinable())
+        {
+            workerThread.join();
+        }
+    }
+    
 }

@@ -63,6 +63,17 @@ int main()
                    << (writeSuccess ? L" succeeded." : L" failed.") << std::endl;
 
         std::wcout << L"testValue in memory is now: " << testValue << std::endl;
+
+        memscope::FreezeWorker freezeWorker;
+        freezeWorker.Start(processHandle, targetAddress, 100);
+
+        std::wcout << L"Freezing value at 0x" << std::hex << targetAddress << std::dec
+                   << L" to 100. Press Enter to stop." << std::endl;
+
+        std::cin.get();
+
+        freezeWorker.Stop();
+        std::wcout << L"testValue in memory is now: " << testValue << std::endl;
     }
 
     CloseHandle(processHandle);
