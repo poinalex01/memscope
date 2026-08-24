@@ -13,31 +13,45 @@ int main()
         return 1;
     }
 
-    std::wstring targetName = L"Notepad.exe";
+    int32_t testValue = 123456789;
 
-    auto pid = memscope::FindProcessIdByName(targetName);
-
-    if (!pid.has_value())
-    {
-        std::wcout << L"Process '" << targetName << L"' not found." << std::endl;
-        return 1;
-    }
-
-    std::wcout << L"Found process '" << targetName << L"' with PID: " << pid.value() << std::endl;
-
-    HANDLE processHandle = memscope::OpenProcessByPid(pid.value());
+    DWORD ownPid = GetCurrentProcessId();
+    HANDLE processHandle = memscope::OpenProcessByPid(ownPid);
 
     if (processHandle == NULL)
     {
-        std::wcout << L"Failed to open process handle." << std::endl;
+        std::wcout << L"Failed to open own process handle." << std::endl;
         return 1;
     }
 
-    std::wcout << L"Process handle opened successfully." << std::endl;
+    std::wcout << L"Attached to own process, PID: " << ownPid << std::endl;
+    std::wcout << L"Known test value is at address: " << &testValue << std::endl;
 
     auto regions = memscope::GetReadableWritableRegions(processHandle);
 
-    std::wcout << L"Found " << regions.size() << L" readable/writable regions." << std::endl;
+    std::vector<uintptr_t> allMatches;
+    for (const auto &region : regions)
+    {
+        auto matches = memscope::ScanRegionForValue(processHandle, region, testValue);
+        allMatches.insert(allMatches.end(), matches.begin(), matches.end());
+    }
+
+    std::wcout << L"First scan found " << allMatches.size() << L" matches for value " << testValue << L":" << std::endl;
+    for (const auto &address : allMatches)
+    {
+        std::wcout << L"  0x" << std::hex << address << std::dec << std::endl;
+    }
+
+    testValue = 999999999;
+    std::wcout << L"Value changed to " << testValue << L", rescanning..." << std::endl;
+
+    auto narrowedMatches = memscope::RescanAddresses(processHandle, allMatches, testValue);
+
+    std::wcout << L"Rescan narrowed down to " << narrowedMatches.size() << L" match(es):" << std::endl;
+    for (const auto &address : narrowedMatches)
+    {
+        std::wcout << L"  0x" << std::hex << address << std::dec << std::endl;
+    }
 
     CloseHandle(processHandle);
 
