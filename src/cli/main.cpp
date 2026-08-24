@@ -53,6 +53,18 @@ int main()
         std::wcout << L"  0x" << std::hex << address << std::dec << std::endl;
     }
 
+    if (!narrowedMatches.empty())
+    {
+        uintptr_t targetAddress = narrowedMatches[1];
+        int32_t newValue = 42;
+
+        bool writeSuccess = memscope::WriteValueToAddress(processHandle, targetAddress, newValue);
+        std::wcout << L"Write to 0x" << std::hex << targetAddress << std::dec
+                   << (writeSuccess ? L" succeeded." : L" failed.") << std::endl;
+
+        std::wcout << L"testValue in memory is now: " << testValue << std::endl;
+    }
+
     CloseHandle(processHandle);
 
     return 0;

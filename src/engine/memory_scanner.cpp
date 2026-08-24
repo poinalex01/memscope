@@ -93,4 +93,18 @@ namespace memscope
         return stillMatching;
     }
 
+    bool WriteValueToAddress(HANDLE processHandle, uintptr_t address, int32_t value)
+    {
+        SIZE_T bytesWritten = 0;
+
+        bool success = WriteProcessMemory(
+            processHandle,
+            reinterpret_cast<LPVOID>(address),
+            &value,
+            sizeof(int32_t),
+            &bytesWritten);
+
+        return success && bytesWritten == sizeof(int32_t);
+    }
+
 }
