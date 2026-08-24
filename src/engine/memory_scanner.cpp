@@ -128,5 +128,5 @@ namespace memscope
             workerThread.join();
         }
     }
-    
+
 }
