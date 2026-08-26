@@ -2,41 +2,36 @@
 
 #include <tlhelp32.h>
 
-namespace memscope
-{
+namespace memscope {
 
-    std::optional<DWORD> FindProcessIdByName(const std::wstring &processName)
-    {
-        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-        if (snapshot == INVALID_HANDLE_VALUE)
-        {
-            return std::nullopt;
-        }
+std::optional<DWORD> FindProcessIdByName(const std::wstring& processName) {
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) {
+    return std::nullopt;
+  }
 
-        PROCESSENTRY32W entry{};
-        entry.dwSize = sizeof(PROCESSENTRY32W);
+  PROCESSENTRY32W entry{};
+  entry.dwSize = sizeof(PROCESSENTRY32W);
 
-        std::optional<DWORD> result;
+  std::optional<DWORD> result;
 
-        if (Process32FirstW(snapshot, &entry))
-        {
-            do
-            {
-                if (processName == entry.szExeFile)
-                {
-                    result = entry.th32ProcessID;
-                    break;
-                }
-            } while (Process32NextW(snapshot, &entry));
-        }
+  if (Process32FirstW(snapshot, &entry)) {
+    do {
+      if (processName == entry.szExeFile) {
+        result = entry.th32ProcessID;
+        break;
+      }
+    } while (Process32NextW(snapshot, &entry));
+  }
 
-        CloseHandle(snapshot);
-        return result;
-    }
-
-    HANDLE OpenProcessByPid(DWORD pid)
-    {
-        return OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE, pid);
-    }
-
+  CloseHandle(snapshot);
+  return result;
 }
+
+HANDLE OpenProcessByPid(DWORD pid) {
+  return OpenProcess(
+      PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE,
+      pid);
+}
+
+}  // namespace memscope
