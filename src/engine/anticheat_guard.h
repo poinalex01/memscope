@@ -1,12 +1,12 @@
 #pragma once
 
 #include <windows.h>
-#include <vector>
+
 #include <string>
+#include <vector>
 
-namespace memscope
-{
+namespace memscope {
 
-    bool IsAntiCheatProcessRunning();
+bool IsAntiCheatProcessRunning();
 
 }
