@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "anticheat_guard.h"
+#include "feature_catalog.h"
 #include "memory_scanner.h"
 #include "process_finder.h"
 
@@ -75,6 +76,24 @@ int main() {
 
     freezeWorker.Stop();
     std::wcout << L"testValue in memory is now: " << testValue << std::endl;
+
+    memscope::FeatureCatalog catalog;
+
+    memscope::Feature freezeFeature;
+    freezeFeature.name = "Test Freeze Feature";
+    freezeFeature.category = memscope::FeatureCategory::ValueFreeze;
+    freezeFeature.isBuiltIn = false;
+    freezeFeature.targets.push_back({targetAddress, 100});
+
+    catalog.AddFeature(freezeFeature);
+
+    std::wcout << L"Catalog has " << catalog.GetFeatures().size()
+               << L" feature(s)." << std::endl;
+
+    for (const auto& feature : catalog.GetFeatures()) {
+      std::wcout << L"  Feature: " << feature.name.c_str() << L", targets: "
+                 << feature.targets.size() << std::endl;
+    }
   }
 
   CloseHandle(processHandle);
