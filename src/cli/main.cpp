@@ -56,7 +56,7 @@ int main() {
   }
 
   if (!narrowedMatches.empty()) {
-    uintptr_t targetAddress = narrowedMatches[1];
+    uintptr_t targetAddress = narrowedMatches[0];
     int32_t newValue = 42;
 
     bool writeSuccess =

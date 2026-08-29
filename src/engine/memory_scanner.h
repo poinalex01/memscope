@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 #include <thread>
+#include <variant>
 #include <vector>
 
 namespace memscope {
@@ -14,10 +15,11 @@ struct MemoryRegion {
   size_t size;
 };
 
+using ScanValue = std::variant<int32_t, int64_t, float, double>;
 std::vector<MemoryRegion> GetReadableWritableRegions(HANDLE processHandle);
 std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle,
                                           const MemoryRegion& region,
-                                          int32_t targetValue);
+                                          const ScanValue& targetValue);
 std::vector<uintptr_t> RescanAddresses(
     HANDLE processHandle, const std::vector<uintptr_t>& previousMatches,
     int32_t targetValue);

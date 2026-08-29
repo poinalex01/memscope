@@ -1,5 +1,8 @@
 #include "memory_scanner.h"
 
+#include <cmath>
+#include <cstring>
+
 namespace memscope {
 
 std::vector<MemoryRegion> GetReadableWritableRegions(HANDLE processHandle) {
@@ -28,12 +31,32 @@ std::vector<MemoryRegion> GetReadableWritableRegions(HANDLE processHandle) {
   return regions;
 }
 
+namespace {
+
+bool ValuesMatch(const ScanValue& a, const ScanValue& b) {
+  if (std::holds_alternative<float>(a)) {
+    return std::abs(std::get<float>(a) - std::get<float>(b)) < 0.01f;
+  }
+  if (std::holds_alternative<double>(a)) {
+    return std::abs(std::get<double>(a) - std::get<double>(b)) < 0.01;
+  }
+  return a == b;
+}
+
+size_t SizeOfScanValue(const ScanValue& value) {
+  return std::visit([](auto&& v) { return sizeof(v); }, value);
+}
+
+}  // namespace
+
 std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle,
                                           const MemoryRegion& region,
-                                          int32_t targetValue) {
+                                          const ScanValue& targetValue) {
   std::vector<uintptr_t> matches;
 
-  if (region.size < sizeof(int32_t)) {
+  size_t valueSize = SizeOfScanValue(targetValue);
+
+  if (region.size < valueSize) {
     return matches;
   }
 
@@ -48,12 +71,18 @@ std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle,
     return matches;
   }
 
-  for (size_t offset = 0; offset + sizeof(int32_t) <= bytesRead;
-       offset += sizeof(int32_t)) {
-    int32_t value;
-    std::memcpy(&value, buffer.data() + offset, sizeof(int32_t));
+  for (size_t offset = 0; offset + valueSize <= bytesRead;
+       offset += valueSize) {
+    bool matched = std::visit(
+        [&](auto&& typedTarget) {
+          using T = std::decay_t<decltype(typedTarget)>;
+          T candidate;
+          std::memcpy(&candidate, buffer.data() + offset, sizeof(T));
+          return ValuesMatch(ScanValue(candidate), ScanValue(typedTarget));
+        },
+        targetValue);
 
-    if (value == targetValue) {
+    if (matched) {
       matches.push_back(region.baseAddress + offset);
     }
   }
