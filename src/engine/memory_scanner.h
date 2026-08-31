@@ -22,7 +22,7 @@ std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle,
                                           const ScanValue& targetValue);
 std::vector<uintptr_t> RescanAddresses(
     HANDLE processHandle, const std::vector<uintptr_t>& previousMatches,
-    int32_t targetValue);
+    const ScanValue& targetValue);
 bool WriteValueToAddress(HANDLE processHandle, uintptr_t address,
                          int32_t value);
 
