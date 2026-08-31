@@ -92,19 +92,33 @@ std::vector<uintptr_t> ScanRegionForValue(HANDLE processHandle,
 
 std::vector<uintptr_t> RescanAddresses(
     HANDLE processHandle, const std::vector<uintptr_t>& previousMatches,
-    int32_t targetValue) {
+    const ScanValue& targetValue) {
   std::vector<uintptr_t> stillMatching;
 
+  size_t valueSize = SizeOfScanValue(targetValue);
+
   for (const auto& address : previousMatches) {
-    int32_t currentValue = 0;
+    std::vector<uint8_t> buffer(valueSize);
     SIZE_T bytesRead = 0;
 
     bool success =
         ReadProcessMemory(processHandle, reinterpret_cast<LPCVOID>(address),
-                          &currentValue, sizeof(int32_t), &bytesRead);
+                          buffer.data(), valueSize, &bytesRead);
 
-    if (success && bytesRead == sizeof(int32_t) &&
-        currentValue == targetValue) {
+    if (!success || bytesRead != valueSize) {
+      continue;
+    }
+
+    bool matched = std::visit(
+        [&](auto&& typedTarget) {
+          using T = std::decay_t<decltype(typedTarget)>;
+          T candidate;
+          std::memcpy(&candidate, buffer.data(), sizeof(T));
+          return ValuesMatch(ScanValue(candidate), ScanValue(typedTarget));
+        },
+        targetValue);
+
+    if (matched) {
       stillMatching.push_back(address);
     }
   }
