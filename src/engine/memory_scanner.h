@@ -24,11 +24,11 @@ std::vector<uintptr_t> RescanAddresses(
     HANDLE processHandle, const std::vector<uintptr_t>& previousMatches,
     const ScanValue& targetValue);
 bool WriteValueToAddress(HANDLE processHandle, uintptr_t address,
-                         int32_t value);
+                         const ScanValue& value);
 
 class FreezeWorker {
  public:
-  void Start(HANDLE processHandle, uintptr_t address, int32_t value);
+  void Start(HANDLE processHandle, uintptr_t address, const ScanValue& value);
   void Stop();
 
  private:
