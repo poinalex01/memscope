@@ -127,18 +127,20 @@ std::vector<uintptr_t> RescanAddresses(
 }
 
 bool WriteValueToAddress(HANDLE processHandle, uintptr_t address,
-                         int32_t value) {
-  SIZE_T bytesWritten = 0;
-
-  bool success =
-      WriteProcessMemory(processHandle, reinterpret_cast<LPVOID>(address),
-                         &value, sizeof(int32_t), &bytesWritten);
-
-  return success && bytesWritten == sizeof(int32_t);
+                         const ScanValue& value) {
+  return std::visit(
+      [&](auto&& typedValue) {
+        SIZE_T bytesWritten = 0;
+        bool success =
+            WriteProcessMemory(processHandle, reinterpret_cast<LPVOID>(address),
+                               &typedValue, sizeof(typedValue), &bytesWritten);
+        return success && bytesWritten == sizeof(typedValue);
+      },
+      value);
 }
 
 void FreezeWorker::Start(HANDLE processHandle, uintptr_t address,
-                         int32_t value) {
+                         const ScanValue& value) {
   running = true;
 
   workerThread = std::thread([this, processHandle, address, value]() {
