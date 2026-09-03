@@ -3,6 +3,7 @@ add_library(memscope_engine STATIC
     anticheat_guard.cpp
     memory_scanner.cpp
     feature_catalog.cpp
+    debugger.cpp
 )
 
 target_include_directories(memscope_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
