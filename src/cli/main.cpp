@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "anticheat_guard.h"
+#include "debugger.h"
 #include "feature_catalog.h"
 #include "memory_scanner.h"
 #include "process_finder.h"
@@ -93,6 +94,21 @@ int main() {
     for (const auto& feature : catalog.GetFeatures()) {
       std::wcout << L"  Feature: " << feature.name.c_str() << L", targets: "
                  << feature.targets.size() << std::endl;
+    }
+
+    auto notepadPid = memscope::FindProcessIdByName(L"Notepad.exe");
+
+    if (notepadPid.has_value()) {
+      if (memscope::AttachDebugger(notepadPid.value())) {
+        std::wcout << L"Debugger attached to Notepad." << std::endl;
+
+        memscope::DetachDebugger(notepadPid.value());
+        std::wcout << L"Debugger detached." << std::endl;
+      } else {
+        std::wcout << L"Failed to attach debugger." << std::endl;
+      }
+    } else {
+      std::wcout << L"Notepad not found for debugger test." << std::endl;
     }
   }
 
