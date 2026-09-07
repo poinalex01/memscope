@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <tlhelp32.h>
 
 #include <iostream>
 
@@ -101,6 +102,32 @@ int main() {
     if (notepadPid.has_value()) {
       if (memscope::AttachDebugger(notepadPid.value())) {
         std::wcout << L"Debugger attached to Notepad." << std::endl;
+
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        THREADENTRY32 threadEntry{};
+        threadEntry.dwSize = sizeof(THREADENTRY32);
+
+        HANDLE mainThread = NULL;
+
+        if (Thread32First(snapshot, &threadEntry)) {
+          do {
+            if (threadEntry.th32OwnerProcessID == notepadPid.value()) {
+              mainThread = OpenThread(THREAD_ALL_ACCESS, FALSE,
+                                      threadEntry.th32ThreadID);
+              break;
+            }
+          } while (Thread32Next(snapshot, &threadEntry));
+        }
+        CloseHandle(snapshot);
+
+        if (mainThread != NULL) {
+          bool bpSuccess =
+              memscope::SetHardwareBreakpoint(mainThread, 0x12345678, 0);
+          std::wcout << (bpSuccess ? L"Breakpoint set successfully."
+                                   : L"Failed to set breakpoint.")
+                     << std::endl;
+          CloseHandle(mainThread);
+        }
 
         memscope::DetachDebugger(notepadPid.value());
         std::wcout << L"Debugger detached." << std::endl;
