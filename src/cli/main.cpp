@@ -97,45 +97,74 @@ int main() {
                  << feature.targets.size() << std::endl;
     }
 
-    auto notepadPid = memscope::FindProcessIdByName(L"Notepad.exe");
+    auto pid = memscope::FindProcessIdByName(L"memscope_test_target.exe");
 
-    if (notepadPid.has_value()) {
-      if (memscope::AttachDebugger(notepadPid.value())) {
-        std::wcout << L"Debugger attached to Notepad." << std::endl;
+    if (pid.has_value()) {
+      if (memscope::AttachDebugger(pid.value())) {
+        std::wcout << L"Debugger attached!" << std::endl;
 
+        HANDLE handle = memscope::OpenProcessByPid(pid.value());
+
+        std::vector<HANDLE> allThreads;
         HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
         THREADENTRY32 threadEntry{};
         threadEntry.dwSize = sizeof(THREADENTRY32);
 
-        HANDLE mainThread = NULL;
-
         if (Thread32First(snapshot, &threadEntry)) {
           do {
-            if (threadEntry.th32OwnerProcessID == notepadPid.value()) {
-              mainThread = OpenThread(THREAD_ALL_ACCESS, FALSE,
-                                      threadEntry.th32ThreadID);
-              break;
+            if (threadEntry.th32OwnerProcessID == pid.value()) {
+              HANDLE t = OpenThread(THREAD_ALL_ACCESS, FALSE,
+                                    threadEntry.th32ThreadID);
+              if (t != NULL) {
+                allThreads.push_back(t);
+              }
             }
           } while (Thread32Next(snapshot, &threadEntry));
         }
         CloseHandle(snapshot);
 
-        if (mainThread != NULL) {
-          bool bpSuccess =
-              memscope::SetHardwareBreakpoint(mainThread, 0x12345678, 0);
-          std::wcout << (bpSuccess ? L"Breakpoint set successfully."
-                                   : L"Failed to set breakpoint.")
+        if (!allThreads.empty() && handle != NULL) {
+          uintptr_t testAddress = 0x15FDC4;
+
+          bool anySuccess = false;
+          for (auto t : allThreads) {
+            if (memscope::SetHardwareBreakpoint(t, testAddress, 0)) {
+              anySuccess = true;
+            }
+            CloseHandle(t);
+          }
+
+          std::wcout << (anySuccess ? L"Breakpoint set successfully."
+                                    : L"Failed to set breakpoint.")
                      << std::endl;
-          CloseHandle(mainThread);
+
+          if (anySuccess) {
+            std::wcout << L"Waiting for breakpoint hit.." << std::endl;
+
+            uintptr_t hitAddress = 0;
+            bool hit =
+                memscope::WaitForBreakpointHit(pid.value(), 10000, hitAddress);
+
+            if (hit) {
+              std::wcout << L"Breakpoint hit pointer: 0x" << std::hex
+                         << hitAddress << std::dec << std::endl;
+            } else {
+              std::wcout << L"No breakpoint hit." << std::endl;
+            }
+          }
         }
 
-        memscope::DetachDebugger(notepadPid.value());
+        if (handle != NULL) {
+          CloseHandle(handle);
+        }
+
+        memscope::DetachDebugger(pid.value());
         std::wcout << L"Debugger detached." << std::endl;
       } else {
         std::wcout << L"Failed to attach debugger." << std::endl;
       }
     } else {
-      std::wcout << L"Notepad not found for debugger test." << std::endl;
+      std::wcout << L"Test target not found!" << std::endl;
     }
   }
 
